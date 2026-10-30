@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快速登录测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5; }
+        .container { max-width: 500px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #333; margin-bottom: 30px; }
+        .role-buttons { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        .role-btn { padding: 15px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; background-color: #409EFF; color: white; transition: background-color 0.3s; }
+        .role-btn:hover { background-color: #66b1ff; }
+        .role-btn:active { background-color: #3a8ee6; }
+        .info { background-color: #f0f9eb; color: #67c23a; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
+        .error { background-color: #fef0f0; color: #f56c6c; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
+        .success { background-color: #f0f9eb; color: #67c23a; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
+        .test-section { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; }
+        button { padding: 8px 16px; margin: 5px; cursor: pointer; }
+        .debug-info { white-space: pre-wrap; font-family: monospace; background: #222; color: #0f0; padding: 10px; border-radius: 5px; margin-top: 10px; max-height: 300px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>快速登录测试</h1>
+        
+        <div class="info">
+            选择一个角色快速登录，然后访问消息中心查看消息
+        </div>
+        
+        <div class="role-buttons">
+            <button class="role-btn" onclick="loginAs('20250000001', '学生张三', 'student')">登录为学生</button>
+            <button class="role-btn" onclick="loginAs('TEA001', '教师李四', 'teacher')">登录为教师</button>
+            <button class="role-btn" onclick="loginAs('ADMIN001', '管理员王五', 'admin')">登录为管理员</button>
+            <button class="role-btn" onclick="loginAs('REV001', '审核员赵六', 'reviewer')">登录为审核员</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>测试功能</h3>
+            <button onclick="testMessageAPI()">测试消息API</button>
+            <button onclick="showLocalStorage()">查看当前登录状态</button>
+            <button onclick="clearLogin()">退出登录</button>
+            <button onclick="openMessageCenter()">打开消息中心</button>
+            
+            <div id="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // 登录函数
+        function loginAs(userId, username, role) {
+            const resultDiv = document.getElementById('result');
+            
+            // 创建用户信息
+            const userInfo = {
+                user_id: userId,
+                username: username,
+                role: role,
+                token: 'mock-token-' + Date.now()
+            };
+            
+            // 保存到localStorage
+            localStorage.setItem('userInfo', JSON.stringify(userInfo));
+            localStorage.setItem('token', userInfo.token);
+            
+            resultDiv.innerHTML = `
+                <div class="success">
+                    <strong>登录成功！</strong><br>
+                    用户ID: ${userId}<br>
+                    用户名: ${username}<br>
+                    角色: ${role}
+                </div>
+            `;
+            
+            console.log('=== 登录成功 ===', userInfo);
+        }
+        
+        // 测试消息API
+        async function testMessageAPI() {
+            const resultDiv = document.getElementById('result');
+            
+            // 检查是否已登录
+            const userInfo = localStorage.getItem('userInfo');
+            if (!userInfo) {
+                resultDiv.innerHTML = `<div class="error">请先登录</div>`;
+                return;
+            }
+            
+            const user = JSON.parse(userInfo);
+            const userId = user.user_id;
+            
+            resultDiv.innerHTML = '<div class="info">正在测试消息API...</div>';
+            
+            try {
+                const response = await fetch(`http://localhost:8000/api/messages/user/${userId}/`);
+                const data = await response.json();
+                
+                let messageCount = 0;
+                if (data.value && Array.isArray(data.value)) {
+                    messageCount = data.value.length;
+                }
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <strong>API测试成功！</strong><br>
+                        状态码: ${response.status}<br>
+                        消息数量: ${messageCount}
+                    </div>
+                    <div class="debug-info">
+API响应数据: ${JSON.stringify(data, null, 2)}
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <strong>API测试失败:</strong><br>
+                        ${error.message}
+                    </div>
+                    <div class="debug-info">
+错误详情: ${JSON.stringify(error, null, 2)}
+                    </div>
+                `;
+            }
+        }
+        
+        // 显示localStorage
+        function showLocalStorage() {
+            const resultDiv = document.getElementById('result');
+            
+            let html = '<div class="info"><strong>当前登录状态:</strong><br>';
+            
+            if (localStorage.length === 0) {
+                html += '未登录';
+            } else {
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    const value = localStorage.getItem(key);
+                    html += `<br><strong>${key}:</strong> ${value}`;
+                }
+            }
+            
+            html += '</div>';
+            resultDiv.innerHTML = html;
+        }
+        
+        // 退出登录
+        function clearLogin() {
+            localStorage.removeItem('userInfo');
+            localStorage.removeItem('token');
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="info">已退出登录</div>';
+        }
+        
+        // 打开消息中心
+        function openMessageCenter() {
+            const userInfo = localStorage.getItem('userInfo');
+            if (!userInfo) {
+                alert('请先登录');
+                return;
+            }
+            
+            const user = JSON.parse(userInfo);
+            let url = '';
+            
+            // 根据角色跳转到相应的消息中心
+            switch (user.role) {
+                case 'student':
+                    url = '/src/views/student/StudentMessage.vue';
+                    break;
+                case 'teacher':
+                    url = '/src/views/teacher/TeacherMessage.vue';
+                    break;
+                case 'admin':
+                    url = '/src/views/admin/AdminMessage.vue';
+                    break;
+                case 'reviewer':
+                    url = '/src/views/reviewer/ReviewerMessage.vue';
+                    break;
+                default:
+                    url = '/src/views/student/StudentMessage.vue';
+            }
+            
+            // 在当前窗口打开或新窗口打开
+            window.open('http://localhost:5173' + url, '_blank');
+        }
+        
+        // 页面加载时检查登录状态
+        window.onload = function() {
+            const userInfo = localStorage.getItem('userInfo');
+            if (userInfo) {
+                const user = JSON.parse(userInfo);
+                const resultDiv = document.getElementById('result');
+                resultDiv.innerHTML = `
+                    <div class="info">
+                        <strong>当前已登录:</strong><br>
+                        用户ID: ${user.user_id}<br>
+                        用户名: ${user.username}<br>
+                        角色: ${user.role}
+                    </div>
+                `;
+            }
+        };
+    </script>
+</body>
+</html>

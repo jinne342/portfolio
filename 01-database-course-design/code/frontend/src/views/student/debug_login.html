@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>调试登录状态</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .info { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .error { color: red; }
+        .success { color: green; }
+        button { padding: 8px 16px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>登录状态调试</h1>
+        
+        <div class="info">
+            <h3>localStorage内容：</h3>
+            <div id="localStorageContent"></div>
+        </div>
+        
+        <div class="info">
+            <h3>当前用户信息：</h3>
+            <div id="userInfo"></div>
+        </div>
+        
+        <div class="info">
+            <h3>API测试：</h3>
+            <button onclick="testUserMessages()">测试用户消息API</button>
+            <div id="apiResult"></div>
+        </div>
+        
+        <div class="info">
+            <h3>测试登录：</h3>
+            <input type="text" id="userId" placeholder="用户ID" value="20250000001">
+            <button onclick="loginTest()">模拟登录</button>
+            <button onclick="logout()">退出登录</button>
+            <div id="loginResult"></div>
+        </div>
+    </div>
+
+    <script>
+        // 显示localStorage内容
+        function showLocalStorage() {
+            const content = document.getElementById('localStorageContent');
+            content.innerHTML = '';
+            
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                content.innerHTML += `<p><strong>${key}:</strong> ${value}</p>`;
+            }
+        }
+        
+        // 显示用户信息
+        function showUserInfo() {
+            const userInfoEl = document.getElementById('userInfo');
+            const userInfo = localStorage.getItem('userInfo');
+            
+            if (userInfo) {
+                try {
+                    const user = JSON.parse(userInfo);
+                    userInfoEl.innerHTML = `<p class="success">已登录</p>`;
+                    userInfoEl.innerHTML += `<p>用户ID: ${user.user_id}</p>`;
+                    userInfoEl.innerHTML += `<p>用户名: ${user.username}</p>`;
+                    userInfoEl.innerHTML += `<p>角色: ${user.role}</p>`;
+                } catch (e) {
+                    userInfoEl.innerHTML = `<p class="error">用户信息解析错误: ${e}</p>`;
+                }
+            } else {
+                userInfoEl.innerHTML = `<p class="error">未登录</p>`;
+            }
+        }
+        
+        // 测试用户消息API
+        async function testUserMessages() {
+            const resultEl = document.getElementById('apiResult');
+            resultEl.innerHTML = '正在请求API...';
+            
+            try {
+                const userInfo = localStorage.getItem('userInfo');
+                if (!userInfo) {
+                    resultEl.innerHTML = '<p class="error">未登录，无法测试API</p>';
+                    return;
+                }
+                
+                const user = JSON.parse(userInfo);
+                const userId = user.user_id;
+                
+                const response = await fetch(`http://localhost:8000/api/messages/user/${userId}/`);
+                const data = await response.json();
+                
+                resultEl.innerHTML = `<p class="success">API请求成功</p>`;
+                resultEl.innerHTML += `<p>状态码: ${response.status}</p>`;
+                resultEl.innerHTML += `<p>消息数量: ${data.value?.length || 0}</p>`;
+                resultEl.innerHTML += `<p>原始数据: ${JSON.stringify(data, null, 2)}</p>`;
+            } catch (error) {
+                resultEl.innerHTML = `<p class="error">API请求失败: ${error.message}</p>`;
+                console.error('API测试错误:', error);
+            }
+        }
+        
+        // 模拟登录
+        function loginTest() {
+            const userId = document.getElementById('userId').value;
+            const resultEl = document.getElementById('loginResult');
+            
+            if (!userId) {
+                resultEl.innerHTML = '<p class="error">请输入用户ID</p>';
+                return;
+            }
+            
+            // 模拟用户信息
+            const userInfo = {
+                user_id: userId,
+                username: '测试用户',
+                role: userId.startsWith('ADMIN') ? 'admin' : userId.startsWith('REV') ? 'reviewer' : userId.startsWith('TEA') ? 'teacher' : 'student'
+            };
+            
+            localStorage.setItem('userInfo', JSON.stringify(userInfo));
+            resultEl.innerHTML = `<p class="success">模拟登录成功</p>`;
+            
+            // 更新显示
+            showLocalStorage();
+            showUserInfo();
+        }
+        
+        // 退出登录
+        function logout() {
+            localStorage.removeItem('userInfo');
+            localStorage.removeItem('token');
+            const resultEl = document.getElementById('loginResult');
+            resultEl.innerHTML = `<p class="success">已退出登录</p>`;
+            
+            // 更新显示
+            showLocalStorage();
+            showUserInfo();
+        }
+        
+        // 页面加载时初始化
+        window.onload = function() {
+            showLocalStorage();
+            showUserInfo();
+        };
+    </script>
+</body>
+</html>

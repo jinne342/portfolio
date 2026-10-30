@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>消息调试</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; border-radius: 5px; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        .log { background-color: #f5f5f5; padding: 10px; border-radius: 5px; margin: 10px 0; max-height: 300px; overflow-y: auto; }
+        pre { margin: 0; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>消息中心调试工具</h1>
+    
+    <div class="debug-section">
+        <h2>1. 检查用户登录状态</h2>
+        <button onclick="checkLoginStatus()">检查登录状态</button>
+        <div id="login-status" class="log"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>2. 直接调用API获取消息</h2>
+        <button onclick="testDirectAPI()">调用API</button>
+        <div id="api-result" class="log"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>3. 模拟前端数据处理</h2>
+        <button onclick="testDataProcessing()">处理数据</button>
+        <div id="processing-result" class="log"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>4. 测试日期格式化</h2>
+        <input type="text" id="date-input" value="2025-12-29T00:46:11.747000" style="width: 300px;">
+        <button onclick="testDateFormat()">格式化日期</button>
+        <div id="date-result" class="log"></div>
+    </div>
+
+    <script>
+        // 日期格式化函数（复制自date.js）
+        function formatDateTime(dateTime, options = {}) {
+            if (!dateTime) return '';
+            try {
+                let date;
+                
+                if (typeof dateTime === 'string') {
+                    const cleanedDate = dateTime.replace(/\.\d+$/, '');
+                    const parts = cleanedDate.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/);
+                    if (parts) {
+                        const year = parseInt(parts[1], 10);
+                        const month = parseInt(parts[2], 10) - 1; 
+                        const day = parseInt(parts[3], 10);
+                        const hours = parseInt(parts[4], 10);
+                        const minutes = parseInt(parts[5], 10);
+                        const seconds = parseInt(parts[6], 10);
+                        date = new Date(year, month, day, hours, minutes, seconds);
+                    } else {
+                        date = new Date(cleanedDate);
+                    }
+                } else if (typeof dateTime === 'number') {
+                    if (dateTime.toString().length === 10) dateTime *= 1000;
+                    date = new Date(dateTime);
+                } else {
+                    date = new Date(dateTime);
+                }
+                
+                if (isNaN(date.getTime())) return '无效时间';
+                
+                const defaultOptions = {
+                    year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                };
+                return date.toLocaleString('zh-CN', { ...defaultOptions, ...options });
+            } catch (error) {
+                console.error('日期格式化错误:', error, '原始数据:', dateTime);
+                return '无效时间';
+            }
+        }
+        
+        function logResult(elementId, data) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+        }
+        
+        function checkLoginStatus() {
+            const userInfo = localStorage.getItem('userInfo');
+            const token = localStorage.getItem('token');
+            
+            const status = {
+                userInfo: userInfo ? JSON.parse(userInfo) : null,
+                token: token,
+                hasLogin: !!userInfo
+            };
+            
+            logResult('login-status', status);
+        }
+        
+        async function testDirectAPI() {
+            try {
+                const userInfo = localStorage.getItem('userInfo');
+                if (!userInfo) {
+                    logResult('api-result', { error: '用户未登录' });
+                    return;
+                }
+                
+                const userId = JSON.parse(userInfo).user_id;
+                const url = `http://localhost:8000/api/messages/user/${userId}/`;
+                
+                logResult('api-result', { message: '正在请求API...', url: url });
+                
+                const response = await axios.get(url);
+                logResult('api-result', {
+                    message: 'API请求成功',
+                    status: response.status,
+                    data: response.data,
+                    hasValue: 'value' in response.data,
+                    hasData: 'data' in response.data
+                });
+            } catch (error) {
+                logResult('api-result', { error: error.message, response: error.response?.data });
+            }
+        }
+        
+        async function testDataProcessing() {
+            try {
+                const userInfo = localStorage.getItem('userInfo');
+                if (!userInfo) {
+                    logResult('processing-result', { error: '用户未登录' });
+                    return;
+                }
+                
+                const userId = JSON.parse(userInfo).user_id;
+                const url = `http://localhost:8000/api/messages/user/${userId}/`;
+                
+                // 模拟前端axios拦截器的处理逻辑
+                const response = await axios.get(url);
+                let data = response.data;
+                
+                // 模拟响应拦截器的处理
+                if (data && typeof data === 'object' && 'code' in data) {
+                    if (data.code === 200 || data.code === 0) {
+                        data = data.data !== undefined ? data.data : data;
+                    } else {
+                        throw new Error(data.message || '请求失败');
+                    }
+                }
+                
+                // 模拟fetchMessages中的处理
+                const messageData = data.value || data;
+                
+                logResult('processing-result', {
+                    originalResponse: response.data,
+                    afterInterceptor: data,
+                    afterProcessing: messageData,
+                    isArray: Array.isArray(messageData),
+                    length: Array.isArray(messageData) ? messageData.length : 0
+                });
+            } catch (error) {
+                logResult('processing-result', { error: error.message });
+            }
+        }
+        
+        function testDateFormat() {
+            const input = document.getElementById('date-input').value;
+            const result = formatDateTime(input);
+            logResult('date-result', { original: input, formatted: result });
+        }
+        
+        // 页面加载时自动检查登录状态
+        window.onload = checkLoginStatus;
+    </script>
+</body>
+</html>
