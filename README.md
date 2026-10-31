@@ -1,6 +1,6 @@
 # 数据分析作品集 · JessiesZ
 
-应用统计学本科在读，关注**消费者行为、市场研究与数据支持决策**。这里收录八个完整的课程/竞赛项目，覆盖从**问卷设计、数据清洗、统计建模到结论输出**的全过程，以及数据库系统设计、深度学习风控与商业分析。
+应用统计学本科在读，关注**消费者行为、市场研究与数据支持决策**。这里收录九个完整的课程/竞赛/业务分析项目，覆盖从**问卷设计、数据清洗、统计建模到结论输出**的全过程，以及数据库系统设计、深度学习风控与商业分析。
 
 ## 项目一览
 
@@ -14,14 +14,16 @@
 | 06 | [桦语北境：非遗品牌升级商业计划](./06-huayu-beijing-brand-plan) | 商业分析 / 品牌 | PEST、SWOT、TAM-SAM-SOM、AHP、三年财务测算 | 计划书（脱敏）、全文 Markdown、分析代码 |
 | 07 | [统计预测与时间序列实验合集](./07-stat-forecasting-time-series) | 统计建模 | 回归预测、指数平滑、ARMA、SARIMA | 4 份脱敏报告、可复现代码 |
 | 08 | [电信客户流失预测](./08-ml-course-project) | 机器学习 | 逻辑回归、随机森林、GBDT、5 折交叉验证 | 完整报告、训练代码、合成数据 |
+| 09 | [电商用户行为分析](./09-ecommerce-user-behavior) | 业务分析 / SQL | SQL 窗口函数、RFM、周 cohort、复购间隔、Streamlit 看板 | 8 条 SQL、看板、一页纸结论 |
 
 ## 技能
 
-- **数据处理**：Python（pandas / numpy）、SQL（SQL Server）、Excel
+- **数据处理**：Python（pandas / numpy）、SQL（SQL Server / DuckDB）、Excel
+- **商业分析**：RFM、cohort 留存、复购、漏斗、A/B 实验设计
+- **可视化与呈现**：Streamlit、Plotly、ECharts、Excel 图表、PPT 汇报
 - **统计分析**：描述统计、交叉分析、相关与回归、聚类（K-means）、结构方程模型
 - **机器学习**：TensorFlow / Keras、GRU、Focal Loss、BorderlineSMOTE、阈值寻优
 - **时间序列**：ARIMA / SARIMA、指数平滑、Holt-Winters、ADF 检验、ACF/PACF 定阶
-- **可视化与呈现**：ECharts、Excel 图表、PPT 汇报
 - **工程**：FastAPI、SQLAlchemy、Vue 3、Element Plus、Git
 
 ## 说明
@@ -33,4 +35,5 @@
 - 06 的商业计划书已移除「团队成员」整章（姓名、班级、获奖经历），原始 docx 未上传。
 - 07 的 4 份实验报告封面姓名/学号/指导教师已替换为 `XXX`/`XXXXXXXXXX`，文档元数据已清空；原始数据未公开，代码使用同结构合成数据。
 - 08 的课程数据未随模板提供，仓库使用合成样本跑通流程；`latex-template/` 为原始模板，未改动。
+- 09 使用 UCI Online Retail 公开数据子集（8 周、6.7 万笔），原始 CSV 未提交；数据不含个人信息。
 - 所有数据均为课程/竞赛场景下的问卷或模拟数据，不含真实用户隐私。

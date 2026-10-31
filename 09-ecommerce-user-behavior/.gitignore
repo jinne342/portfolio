@@ -1,0 +1,6 @@
+data/*.duckdb
+data/OnlineRetail.csv
+reports/
+__pycache__/
+*.pyc
+.DS_Store
